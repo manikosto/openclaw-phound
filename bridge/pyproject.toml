@@ -1,0 +1,9 @@
+[project]
+name = "openclaw-phound-bridge"
+version = "0.1.0"
+description = "Phound SDK bridge process for the OpenClaw Phound channel plugin"
+requires-python = ">=3.11"
+dependencies = ["phound>=0.3.3,<0.4"]
+
+[tool.uv]
+package = false

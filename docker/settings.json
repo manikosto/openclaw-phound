@@ -1,0 +1,10 @@
+[
+  {"path": "gateway.mode", "value": "local"},
+  {"path": "gateway.bind", "value": "loopback"},
+  {"path": "session.dmScope", "value": "per-channel-peer"},
+  {"path": "channels.phound", "value": {"dmPolicy": "pairing", "pythonCommand": ["/opt/phound-venv/bin/python"], "voice": {"enabled": true}}},
+  {"path": "tools.media.models", "value": [{"provider": "openai", "model": "gpt-4o-transcribe", "capabilities": ["audio"]}]},
+  {"path": "tools.media.audio.enabled", "value": true},
+  {"path": "talk.realtime.provider", "value": "openai"},
+  {"path": "talk.realtime.model", "value": "gpt-realtime-2.1"}
+]

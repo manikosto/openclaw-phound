@@ -1,0 +1,13 @@
+services:
+  openclaw:
+    build: .
+    image: openclaw-phound:local
+    platform: linux/amd64
+    restart: unless-stopped
+    # OPENAI_API_KEY and PHOUND_TOKEN (Phound bot token from the Support Bot).
+    env_file: .env
+    volumes:
+      - openclaw-state:/home/node/.openclaw
+
+volumes:
+  openclaw-state:

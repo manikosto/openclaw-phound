@@ -1,0 +1,6 @@
+node_modules
+bridge/.venv
+**/__pycache__
+.env
+*.tgz
+.git

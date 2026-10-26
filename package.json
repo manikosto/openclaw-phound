@@ -1,0 +1,133 @@
+{
+  "name": "openclaw-phound",
+  "version": "0.1.0",
+  "description": "OpenClaw channel plugin for Phound: chats, SMS and phone calls through a Phound bot persona.",
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc -p .",
+    "test": "tsx --test test/*.test.ts",
+    "gen:manifest": "tsx scripts/gen-manifest.ts",
+    "build": "tsc -p tsconfig.build.json",
+    "prepack": "npm run build"
+  },
+  "dependencies": {
+    "typebox": "1.3.34",
+    "ws": "8.22.0",
+    "zod": "4.6.5"
+  },
+  "peerDependencies": {
+    "openclaw": ">=2026.10.7"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "@types/ws": "^8.18.2",
+    "openclaw": "^2026.10.7",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3"
+  },
+  "openclaw": {
+    "extensions": [
+      "./index.ts"
+    ],
+    "channel": {
+      "id": "phound",
+      "label": "Phound",
+      "selectionLabel": "Phound (chats, SMS, calls)",
+      "detailLabel": "Phound bot persona",
+      "docsPath": "/channels/phound",
+      "docsLabel": "phound",
+      "blurb": "Talk to the agent from the Phound app, by SMS, or by phone call.",
+      "order": 89,
+      "setup": {
+        "fields": [
+          {
+            "key": "token",
+            "kind": "string",
+            "sensitive": true,
+            "cli": {
+              "flags": "--token <token>",
+              "description": "Phound bot token (TOKEN from the Support Bot)"
+            }
+          },
+          {
+            "key": "personaUid",
+            "kind": "string",
+            "cli": {
+              "flags": "--persona-uid <uid>",
+              "description": "Persona the bot runs as (PERSONAS from the Support Bot)"
+            }
+          },
+          {
+            "key": "sbc",
+            "kind": "string",
+            "cli": {
+              "flags": "--sbc <url>",
+              "description": "Phound server; empty for production"
+            }
+          },
+          {
+            "key": "dmPolicy",
+            "kind": "choice",
+            "choices": [
+              "pairing",
+              "allowlist",
+              "open",
+              "disabled"
+            ],
+            "cli": {
+              "flags": "--dm-policy <policy>",
+              "description": "Phound DM policy"
+            }
+          },
+          {
+            "key": "allowFrom",
+            "kind": "string-list",
+            "cli": {
+              "flags": "--allow-from <ids>",
+              "description": "Allowed phone numbers or persona uids"
+            }
+          }
+        ]
+      }
+    },
+    "compat": {
+      "pluginApi": ">=2026.10.7"
+    },
+    "install": {
+      "clawhubSpec": "clawhub:openclaw-phound",
+      "defaultChoice": "clawhub",
+      "minHostVersion": ">=2026.10.7"
+    },
+    "runtimeExtensions": [
+      "./dist/index.js"
+    ],
+    "build": {
+      "openclawVersion": "2026.10.7",
+      "pluginSdkVersion": "2026.10.7"
+    }
+  },
+  "files": [
+    "dist",
+    "bridge/phound_bridge.py",
+    "bridge/pyproject.toml",
+    "bridge/uv.lock",
+    "assets",
+    "openclaw.plugin.json",
+    "README.md"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/manikosto/openclaw-phound"
+  },
+  "homepage": "https://github.com/manikosto/openclaw-phound#readme",
+  "keywords": [
+    "openclaw",
+    "openclaw-plugin",
+    "phound",
+    "channel",
+    "sms",
+    "voice",
+    "telephony"
+  ]
+}
