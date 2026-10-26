@@ -7,12 +7,12 @@ import {
   createRealtimeVoiceBridgeSession,
   REALTIME_VOICE_AGENT_CONSULT_TOOL_NAME,
   REALTIME_VOICE_AUDIO_FORMAT_PCM16_24KHZ,
-  resolveConfiguredRealtimeVoiceProvider,
   resolveRealtimeVoiceAgentConsultTools,
   resolveRealtimeVoiceAgentConsultToolsAllow,
   type RealtimeVoiceTool,
   type RealtimeVoiceToolPolicy,
 } from "openclaw/plugin-sdk/realtime-voice";
+import * as realtimeVoice from "openclaw/plugin-sdk/realtime-voice";
 import type { PhoundBridgeLog } from "../bridge.js";
 import { getPhoundRuntime } from "../runtime.js";
 
@@ -109,12 +109,23 @@ function greetingInstructions(params: VoiceEngineParams): string {
   return params.greeting?.trim() || "Greet the caller briefly as yourself and ask how you can help.";
 }
 
+/**
+ * OpenClaw replaces the synchronous provider resolver with an async one: the async
+ * one ships from 2026.10.10, the sync one is removed in January 2027. Use whichever
+ * the running OpenClaw has. A namespace read, so a missing export is undefined
+ * rather than a module-linking error.
+ */
+async function resolveRealtimeVoiceProvider(params: realtimeVoice.RealtimeVoiceProviderSelection) {
+  const resolveAsync = realtimeVoice.resolveConfiguredRealtimeVoiceProviderAsync;
+  return resolveAsync ? await resolveAsync(params) : realtimeVoice.resolveConfiguredRealtimeVoiceProvider(params);
+}
+
 export async function startVoiceEngine(params: VoiceEngineParams): Promise<VoiceEngine> {
   const { cfg, route, log, output } = params;
   const talk = ((cfg as { talk?: TalkConfig }).talk ?? {}) as TalkConfig;
   const realtime = talk.realtime ?? {};
   const voice = realtime.speakerVoice ?? realtime.speakerVoiceId;
-  const resolved = resolveConfiguredRealtimeVoiceProvider({
+  const resolved = await resolveRealtimeVoiceProvider({
     configuredProviderId: realtime.provider,
     providerConfigs: realtime.providers ?? {},
     providerConfigOverrides: {

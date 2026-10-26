@@ -27,7 +27,7 @@ declare module "openclaw/plugin-sdk/realtime-voice" {
     handlesAgentConsult?: boolean;
     supportsToolCalls?: boolean;
   };
-  export function resolveConfiguredRealtimeVoiceProvider(params: {
+  export type RealtimeVoiceProviderSelection = {
     configuredProviderId?: string;
     providerConfigs?: Record<string, Record<string, unknown> | undefined>;
     providerConfigOverrides?: Record<string, unknown>;
@@ -37,11 +37,20 @@ declare module "openclaw/plugin-sdk/realtime-voice" {
     useProviderDefaultModel?: boolean;
     autoRespondToAudio?: boolean;
     noRegisteredProviderMessage?: string;
-  }): {
+  };
+  export type ResolvedRealtimeVoiceProvider = {
     provider: RealtimeVoiceProvider;
     providerConfig: Record<string, unknown>;
     capabilities?: RealtimeVoiceProviderCapabilities;
   };
+  /** Deprecated in OpenClaw; removed in the first stable release of January 2027. */
+  export function resolveConfiguredRealtimeVoiceProvider(
+    params: RealtimeVoiceProviderSelection,
+  ): ResolvedRealtimeVoiceProvider;
+  /** Its replacement; absent before OpenClaw 2026.10.10. */
+  export const resolveConfiguredRealtimeVoiceProviderAsync:
+    | ((params: RealtimeVoiceProviderSelection) => Promise<ResolvedRealtimeVoiceProvider>)
+    | undefined;
 
   export type RealtimeVoiceToolCallEvent = {
     itemId?: string;
