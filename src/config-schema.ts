@@ -22,6 +22,14 @@ const PhoundVoiceConfigSchema = z
   })
   .strict();
 
+const PhoundContactSchema = z
+  .object({
+    name: z.string().min(1),
+    number: z.string().min(1),
+    note: z.string().optional(),
+  })
+  .strict();
+
 export const PhoundAccountConfigSchema = z
   .object({
     name: z.string().optional(),
@@ -33,6 +41,7 @@ export const PhoundAccountConfigSchema = z
     dmPolicy: DmPolicySchema.optional().default("pairing"),
     allowFrom: AllowFromListSchema,
     textChunkLimit: z.number().int().positive().optional(),
+    contacts: z.array(PhoundContactSchema).optional(),
     voice: PhoundVoiceConfigSchema.optional(),
   })
   .strict();
@@ -86,6 +95,10 @@ export const PhoundChannelConfigSchema = buildChannelConfigSchema(PhoundConfigSc
       label: "Phound Allow From",
       help: "Allowed senders: phone numbers in E.164 format or Phound persona uids, or * when dmPolicy is open.",
     },
+    contacts: {
+      label: "Contacts",
+      help: "People the agent may call by name and talk with: name, phone number (E.164, e.g. +15551234567) and an optional note the agent gets on the call. Calling a contact needs no pairing; it does not let them message the agent.",
+    },
     "voice.enabled": { label: "Answer Calls", help: "Answer phone calls with the agent. Default true." },
     "voice.greeting": {
       label: "Call Greeting",
@@ -101,11 +114,12 @@ export const PhoundChannelConfigSchema = buildChannelConfigSchema(PhoundConfigSc
     },
     "voice.callPolicy": {
       label: "Who the Agent May Call",
-      help: '"allowlist" (default): only people who may talk to the agent, plus voice.callAllow. "any": any number, at your account\'s cost.',
+      help: '"allowlist" (default): only Contacts, people who may talk to the agent, and voice.callAllow. "any": any number, at your account\'s cost.',
     },
     "voice.callAllow": {
+      advanced: true,
       label: "Extra Numbers to Call",
-      help: "Phone numbers (E.164) the agent may call without being allowed to talk to it; they only hear the agent's message.",
+      help: "Phone numbers (E.164) the agent may call without being allowed to talk to it; they only hear the agent's message. For a conversation, add them to Contacts instead.",
     },
   },
 });

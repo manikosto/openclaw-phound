@@ -22,6 +22,15 @@ export type PhoundVoiceSettings = {
   callAllow: string[];
 };
 
+/** Someone the operator lets the agent call by name, for a conversation. */
+export type PhoundContact = {
+  name: string;
+  /** E.164, with the leading +. */
+  number: string;
+  /** What the agent should know about them on a call. */
+  note: string;
+};
+
 export interface ResolvedPhoundAccount {
   accountId: string;
   enabled: boolean;
@@ -33,6 +42,7 @@ export interface ResolvedPhoundAccount {
   dmPolicy: "pairing" | "open" | "allowlist" | "disabled";
   allowFrom: string[];
   textChunkLimit: number;
+  contacts: PhoundContact[];
   voice: PhoundVoiceSettings;
 }
 

@@ -1,16 +1,22 @@
 import type { OpenClawPluginApi } from "openclaw/plugin-sdk/channel-core";
 import { jsonResult } from "openclaw/plugin-sdk/tool-results";
 import { Type } from "typebox";
-import { listConnectedAccountIds, placePhoundCall } from "./gateway.js";
+import { listConnectedAccountIds, listPhoundContacts, placePhoundCall } from "./gateway.js";
 import { findCall, listCalls } from "./voice/call-session.js";
 
 const PhoundCallSchema = Type.Object({
-  to: Type.String({ description: "Phone number to call, in E.164 format (+15551234567)" }),
+  to: Type.String({
+    description: "A contact's name (see phound_contacts), or a phone number in E.164 format (+15551234567)",
+  }),
   message: Type.String({ description: "The first sentence you say when the call is answered" }),
   purpose: Type.Optional(
     Type.String({ description: "Why you are calling; kept in your context during the call" }),
   ),
   accountId: Type.Optional(Type.String({ description: "Phound account to call from" })),
+});
+
+const PhoundContactsSchema = Type.Object({
+  accountId: Type.Optional(Type.String({ description: "Phound account whose contacts to list" })),
 });
 
 const PhoundHangupSchema = Type.Object({
@@ -36,7 +42,7 @@ export function registerPhoundTools(api: OpenClawPluginApi): void {
     name: "phound_call",
     label: "Phound Call",
     description:
-      "Phone someone through Phound and talk with them by voice. Callers who may chat with you get a full conversation; anyone else hears your message and the call ends.",
+      "Phone someone through Phound and talk with them by voice. Your contacts (phound_contacts) and people who may chat with you get a full conversation; anyone else hears your message and the call ends.",
     parameters: PhoundCallSchema,
     async execute(_toolCallId, params) {
       const { to, message, purpose, accountId } = params as {
@@ -54,8 +60,21 @@ export function registerPhoundTools(api: OpenClawPluginApi): void {
       return jsonResult({
         status: "dialling",
         to: result.number,
+        ...(result.name ? { contact: result.name } : {}),
         mode: result.conversational ? "conversation" : "notify",
       });
+    },
+  });
+
+  api.registerTool({
+    name: "phound_contacts",
+    label: "Phound Contacts",
+    description: "List the contacts you may call by name with phound_call, with a note about each.",
+    parameters: PhoundContactsSchema,
+    async execute(_toolCallId, params) {
+      const { accountId } = params as { accountId?: string };
+      const contacts = listPhoundContacts(resolveAccountId(accountId));
+      return jsonResult({ contacts: contacts.map(({ name, number, note }) => ({ name, number, ...(note ? { note } : {}) })) });
     },
   });
 

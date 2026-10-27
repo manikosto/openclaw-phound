@@ -11,8 +11,8 @@ import {
   type SecretInputStringResolution,
   type SecretInputStringResolutionMode,
 } from "openclaw/plugin-sdk/secret-input";
-import { normalizeAllowEntry, normalizePhoneNumber } from "./targets.js";
-import type { PhoundChannelConfig, ResolvedPhoundAccount } from "./types.js";
+import { looksLikePhoneNumber, normalizeAllowEntry, normalizePhoneNumber } from "./targets.js";
+import type { PhoundChannelConfig, PhoundContact, ResolvedPhoundAccount } from "./types.js";
 
 const CHANNEL_ID = "phound";
 const DEFAULT_TEXT_CHUNK_LIMIT = 4000;
@@ -27,6 +27,16 @@ function parseList(raw: unknown): string[] {
   }
   const entries = Array.isArray(raw) ? raw : String(raw).split(",");
   return entries.map((entry) => normalizeAllowEntry(String(entry))).filter(Boolean);
+}
+
+function parseContacts(raw: PhoundChannelConfig["contacts"]): PhoundContact[] {
+  return (raw ?? [])
+    .map((contact) => ({
+      name: contact.name.trim(),
+      number: normalizePhoneNumber(contact.number),
+      note: contact.note?.trim() ?? "",
+    }))
+    .filter((contact) => contact.name && looksLikePhoneNumber(contact.number));
 }
 
 function hasBaseAccount(channelCfg: PhoundChannelConfig | undefined): boolean {
@@ -85,6 +95,7 @@ function readPhoundAccount(
     dmPolicy: merged.dmPolicy ?? "pairing",
     allowFrom: parseList(merged.allowFrom),
     textChunkLimit: merged.textChunkLimit ?? DEFAULT_TEXT_CHUNK_LIMIT,
+    contacts: parseContacts(merged.contacts),
     voice: {
       enabled: voice.enabled !== false,
       greeting: voice.greeting?.trim() ?? "",

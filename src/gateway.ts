@@ -6,8 +6,9 @@ import {
   type PhoundChannelRuntime,
   type PhoundSender,
 } from "./inbound.js";
-import { normalizePhoneNumber, phoundSenderId } from "./targets.js";
+import { looksLikePhoneNumber, normalizePhoneNumber, phoundSenderId } from "./targets.js";
 import type {
+  PhoundContact,
   PhoundIncomingCall,
   PhoundInboundMessage,
   PhoundVoiceSettings,
@@ -20,7 +21,7 @@ import {
   removeCall,
 } from "./voice/call-session.js";
 
-type OutboundCallRequest = { opening: string; purpose?: string; conversational: boolean };
+type OutboundCallRequest = { opening: string; purpose?: string; conversational: boolean; name?: string };
 
 type AccountContext = {
   cfg: OpenClawConfig;
@@ -99,7 +100,7 @@ function wireBridgeEvents(ctx: AccountContext): void {
         log,
         callId: event.call_id,
         direction: "outbound",
-        peer: callSender({ fromNumber: number }),
+        peer: callSender({ fromNumber: number, name: request?.name }),
         conversational: request?.conversational ?? false,
         opening: request?.opening,
         purpose: request?.purpose,
@@ -180,9 +181,34 @@ export function assertCallAllowed(
 ): void {
   if (voice.callPolicy !== "any" && !senderAllowed && !voice.callAllow.includes(number)) {
     throw new Error(
-      `Calling ${number} is not allowed: add it to channels.phound.voice.callAllow, approve it with pairing, or set voice.callPolicy to "any".`,
+      `Calling ${number} is not allowed: add it to channels.phound.contacts, approve it with pairing, or set voice.callPolicy to "any".`,
     );
   }
+}
+
+/**
+ * What phound_call's `to` names: a phone number, or a contact by name. A number
+ * that belongs to a contact is that contact too.
+ */
+export function resolveCallTarget(
+  contacts: PhoundContact[],
+  to: string,
+): { number: string; contact?: PhoundContact } {
+  const wanted = to.trim().toLowerCase();
+  const byName = contacts.find((contact) => contact.name.toLowerCase() === wanted);
+  if (byName) {
+    return { number: byName.number, contact: byName };
+  }
+  if (!looksLikePhoneNumber(to) || !/^[\s+\d().-]+$/.test(to.trim())) {
+    const names = contacts.map((contact) => contact.name);
+    throw new Error(
+      names.length > 0
+        ? `"${to}" is neither a phone number in E.164 format nor a contact. Contacts: ${names.join(", ")}.`
+        : `"${to}" is not a phone number in E.164 format, and no contacts are set in channels.phound.contacts.`,
+    );
+  }
+  const number = normalizePhoneNumber(to);
+  return { number, contact: contacts.find((contact) => contact.number === number) };
 }
 
 /** Place a call on behalf of the agent. */
@@ -191,34 +217,51 @@ export async function placePhoundCall(params: {
   to: string;
   opening: string;
   purpose?: string;
-}): Promise<{ number: string; conversational: boolean }> {
+}): Promise<{ number: string; name?: string; conversational: boolean }> {
   const ctx = contexts.get(params.accountId);
   if (!ctx || !ctx.bridge.running) {
     throw new Error(`Phound account "${params.accountId}" is not connected`);
   }
-  const number = normalizePhoneNumber(params.to);
-  if (!/^\+\d{7,15}$/.test(number)) {
-    throw new Error(`"${params.to}" is not a phone number in E.164 format`);
-  }
-  const fromPersona = ctx.bridge.account.personaUid || ctx.bridge.lastPersonaUid;
+  const account = ctx.bridge.account;
+  const { number, contact } = resolveCallTarget(account.contacts, params.to);
+  const fromPersona = account.personaUid || ctx.bridge.lastPersonaUid;
   if (!fromPersona) {
     throw new Error(
       "Phound does not know which persona to call from: set channels.phound.personaUid.",
     );
   }
-  // Only someone who may talk to the agent anyway gets a conversation; anyone
-  // else hears the opening line and the call ends.
-  const conversational = await isPhoundSenderAllowed({
-    cfg: ctx.cfg,
-    account: ctx.bridge.account,
-    channelRuntime: ctx.channelRuntime,
-    sender: { id: number, name: number },
-    log: ctx.log,
+  // The operator's contacts and anyone who may talk to the agent anyway get a
+  // conversation; anyone else hears the opening line and the call ends.
+  const conversational =
+    Boolean(contact) ||
+    (await isPhoundSenderAllowed({
+      cfg: ctx.cfg,
+      account,
+      channelRuntime: ctx.channelRuntime,
+      sender: { id: number, name: number },
+      log: ctx.log,
+    }));
+  assertCallAllowed(account.voice, number, conversational);
+  const purpose = [params.purpose, contact?.note ? `About ${contact.name}: ${contact.note}` : ""]
+    .filter(Boolean)
+    .join("\n");
+  ctx.pendingOutbound.set(number, {
+    opening: params.opening,
+    purpose: purpose || undefined,
+    conversational,
+    name: contact?.name,
   });
-  assertCallAllowed(ctx.bridge.account.voice, number, conversational);
-  ctx.pendingOutbound.set(number, { opening: params.opening, purpose: params.purpose, conversational });
   await ctx.bridge.request("call", { from_persona_uid: fromPersona, number });
-  return { number, conversational };
+  return { number, name: contact?.name, conversational };
+}
+
+/** The contacts of a connected account, for the agent. */
+export function listPhoundContacts(accountId: string): PhoundContact[] {
+  const ctx = contexts.get(accountId);
+  if (!ctx) {
+    throw new Error(`Phound account "${accountId}" is not connected`);
+  }
+  return ctx.bridge.account.contacts;
 }
 
 export function listConnectedAccountIds(): string[] {

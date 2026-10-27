@@ -65,8 +65,28 @@ Now chat, text or call.
 |---|---|
 | **Reply** | Answers go back to the chat the message came from: formatted in the app, plain text over SMS. |
 | **Message first** | The `message` tool with `channel: "phound"` and a target: `chat:<chatId>`, `persona:<personaUid>`, or a `+E.164` number. |
-| **Call someone** | `phound_call` with `to`, an opening line, and an optional purpose. People the agent may talk to get a full conversation; other allowed numbers hear the message and the call ends. |
+| **Call someone** | `phound_call` with `to` (a contact's name or a phone number), an opening line, and an optional purpose. Contacts and people the agent may talk to get a full conversation. |
+| **Look up contacts** | `phound_contacts` lists who it may call by name. |
 | **Hang up** | It says goodbye and hangs up on its own. `phound_hangup` ends a call from a chat. |
+
+## Contacts
+
+Write down the people the agent may call, and it calls them by name: "call Mom and ask when she lands".
+
+```json5
+{
+  channels: {
+    phound: {
+      contacts: [
+        { name: "Mom", number: "+15550001111", note: "Lands in Boston on Friday" },
+        { name: "Dentist", number: "+15552223333", note: "Dr. Lee's office; I'm a patient" },
+      ],
+    },
+  },
+}
+```
+
+The same list is under **Contacts** in the channel settings in the Control UI. The note is what the agent knows about the person on the call. Being a contact lets the agent call someone; it does not let them write to the agent. That still takes pairing.
 
 ## Give it a character
 
@@ -95,13 +115,14 @@ For several characters, add one Phound token per character under `channels.phoun
       personaUid: "<persona uid>",   // the persona the agent answers, writes and calls as
       dmPolicy: "pairing",           // pairing | allowlist | open | disabled
       allowFrom: ["+15551234567", "123456789012"],   // phone numbers with "+", or Phound persona uids
+      contacts: [{ name: "Mom", number: "+15550001111", note: "" }],   // people the agent may call by name
       voice: {
         enabled: true,               // answer calls
         greeting: "",                // how to greet callers, e.g. "Greet them as Ava and ask what they need"
         toolPolicy: "safe-read-only",// agent tools on calls from the Phound app: safe-read-only | owner | none
         phoneToolPolicy: "none",     // the same for calls from phone numbers
-        callPolicy: "allowlist",     // phound_call dials only approved people...
-        callAllow: [],               // ...plus these numbers; "any" lets it dial anyone
+        callPolicy: "allowlist",     // phound_call dials only contacts and approved people; "any" lets it dial anyone
+        callAllow: [],               // extra numbers it may call just to deliver a message
       },
     },
   },
@@ -112,7 +133,8 @@ For several characters, add one Phound token per character under `channels.phoun
 
 - Only approved people can talk to the agent. Calls from anyone else are declined, and nobody can pair over a call.
 - Caller ID can be faked, so a call from a phone number gets its own session, no owner rights and, by default, no agent tools. Calls from the Phound app are authenticated by Phound and share that person's chat.
-- The agent calls only approved people unless you allow more with `voice.callAllow`. Calls cost money.
+- The agent calls only your contacts and approved people, unless you set `voice.callPolicy: "any"`. Calls cost money.
+- On a call with a contact the agent uses `voice.phoneToolPolicy`: by default it talks, but does not touch its files, memory or tools.
 
 ## Run in Docker
 

@@ -21,3 +21,31 @@ test("persona uids are digits too: only a leading + makes a phone number", async
   assert.deepEqual(parsePhoundTarget("+15551234567"), { kind: "phone", number: "+15551234567" });
   assert.deepEqual(parsePhoundTarget("phound:chat:abc"), { kind: "chat", chatId: "abc" });
 });
+
+test("phound_call finds contacts by name or number, and nothing else by name", async () => {
+  const { resolveCallTarget } = await import("../src/gateway.js");
+  const mom = { name: "Mom", number: "+15550001111", note: "Lives in Boston" };
+  const contacts = [mom];
+  assert.deepEqual(resolveCallTarget(contacts, " mom "), { number: "+15550001111", contact: mom });
+  assert.deepEqual(resolveCallTarget(contacts, "+1 (555) 000-1111"), { number: "+15550001111", contact: mom });
+  assert.deepEqual(resolveCallTarget(contacts, "+15552223333"), { number: "+15552223333", contact: undefined });
+  assert.throws(() => resolveCallTarget(contacts, "Dad"), /Contacts: Mom/);
+  assert.throws(() => resolveCallTarget([], "Dad 15552223333"), /no contacts are set/);
+});
+
+test("contacts from the config are normalized, and unusable ones dropped", async () => {
+  const { resolvePhoundAccount } = await import("../src/accounts.js");
+  const account = resolvePhoundAccount({
+    channels: {
+      phound: {
+        token: "1.abc",
+        contacts: [
+          { name: " Mom ", number: "+1 (555) 000-1111", note: " Lives in Boston " },
+          { name: "Nobody", number: "call me" },
+          { name: " ", number: "+15552223333" },
+        ],
+      },
+    },
+  } as never);
+  assert.deepEqual(account.contacts, [{ name: "Mom", number: "+15550001111", note: "Lives in Boston" }]);
+});
