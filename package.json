@@ -1,6 +1,6 @@
 {
   "name": "openclaw-phound",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "OpenClaw channel plugin for Phound: chats, SMS and phone calls through a Phound bot persona.",
   "type": "module",
   "scripts": {

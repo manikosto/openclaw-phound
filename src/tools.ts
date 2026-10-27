@@ -59,8 +59,7 @@ export function registerPhoundTools(api: OpenClawPluginApi): void {
       });
       return jsonResult({
         status: "dialling",
-        to: result.number,
-        ...(result.name ? { contact: result.name } : {}),
+        to: result.name ?? result.number,
         mode: result.conversational ? "conversation" : "notify",
       });
     },
@@ -69,12 +68,13 @@ export function registerPhoundTools(api: OpenClawPluginApi): void {
   api.registerTool({
     name: "phound_contacts",
     label: "Phound Contacts",
-    description: "List the contacts you may call by name with phound_call, with a note about each.",
+    description: "List the contacts you may call by name with phound_call, with a note about each. Their numbers are not shown.",
     parameters: PhoundContactsSchema,
     async execute(_toolCallId, params) {
       const { accountId } = params as { accountId?: string };
       const contacts = listPhoundContacts(resolveAccountId(accountId));
-      return jsonResult({ contacts: contacts.map(({ name, number, note }) => ({ name, number, ...(note ? { note } : {}) })) });
+      // Names are enough to call; the numbers stay out of the agent's context.
+      return jsonResult({ contacts: contacts.map(({ name, note }) => ({ name, ...(note ? { note } : {}) })) });
     },
   });
 
