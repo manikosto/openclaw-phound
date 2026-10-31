@@ -64,3 +64,17 @@ test("a Phound app caller with a number is known by persona; only PSTN callers b
   // An SMS sender without a persona is still known by number.
   assert.equal(phoundSenderId({ fromUid: "", fromNumber: "+1 555 123 4567" }), "+15551234567");
 });
+
+test("outbound media lands in a private temp file the SDK can type by extension", async () => {
+  const { readFile, stat } = await import("node:fs/promises");
+  const { writeMediaFile } = await import("../src/send.js");
+  const jpg = await writeMediaFile({ buffer: Buffer.from("jpeg-bytes"), contentType: "image/jpeg", fileName: "cat---414616e9.jpeg" });
+  assert.match(jpg, /cat---414616e9\.jpg$/);
+  assert.equal(await readFile(jpg, "utf8"), "jpeg-bytes");
+  assert.equal((await stat(jpg)).mode & 0o777, 0o600);
+  // No usable name: a generic one, still with the extension of its content type.
+  assert.match(await writeMediaFile({ buffer: Buffer.from("x"), contentType: "image/png; q=1", fileName: "../../" }), /\/attachment\.png$/);
+  // Unknown content type keeps the original extension; path separators never survive.
+  assert.match(await writeMediaFile({ buffer: Buffer.from("x"), fileName: "../evil/report.pdf" }), /\/report\.pdf$/);
+});
+
