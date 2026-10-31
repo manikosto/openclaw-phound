@@ -49,3 +49,18 @@ test("contacts from the config are normalized, and unusable ones dropped", async
   } as never);
   assert.deepEqual(account.contacts, [{ name: "Mom", number: "+15550001111", note: "Lives in Boston" }]);
 });
+
+test("a Phound app caller with a number is known by persona; only PSTN callers by number", async () => {
+  const { callSender } = await import("../src/gateway.js");
+  const { phoundSenderId } = await import("../src/targets.js");
+  // The platform sends RemoteNumber for a persona that has a number assigned.
+  const app = callSender({ fromUid: "23559744", fromNumber: "+15551234567", name: "Owner" });
+  assert.equal(app.id, "23559744");
+  assert.equal(app.sessionId, undefined);
+  // A PSTN caller has remote uid "0".
+  const pstn = callSender({ fromUid: "0", fromNumber: "+15551234567" });
+  assert.equal(pstn.id, "+15551234567");
+  assert.equal(pstn.sessionId, "call:+15551234567");
+  // An SMS sender without a persona is still known by number.
+  assert.equal(phoundSenderId({ fromUid: "", fromNumber: "+1 555 123 4567" }), "+15551234567");
+});
