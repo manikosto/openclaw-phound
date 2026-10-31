@@ -177,11 +177,13 @@ class Commands:
     def cmd_send(self, c):
         chat_id = c.get("chat_id", "")
         text_format = MessageTextFormat.GPTMARKDOWN if c.get("markdown") else MessageTextFormat.PLAIN
+        # Local file paths; the SDK uploads them and marks images by their extension.
+        attachments = c.get("attachments") or None
         with self._registry.lock:
             handler = self._registry.chats.get(chat_id) if chat_id else None
         if handler is not None:
             # The handler's chat is already open, so nothing can be rejected.
-            handler.send_message_nowait(c["text"], text_format=text_format)
+            handler.send_message_nowait(c["text"], text_format=text_format, attachments=attachments)
             return {"chat_id": chat_id}
         self._phound.send_message_nowait(
             c["text"],
@@ -189,6 +191,7 @@ class Commands:
             chat_id=chat_id,
             persona_uid=c.get("persona_uid", ""),
             text_format=text_format,
+            attachments=attachments,
         )
         return {"chat_id": chat_id}
 

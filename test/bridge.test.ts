@@ -44,6 +44,8 @@ test("bridge carries chat and call events and commands both ways", async () => {
 
   await bridge.request("send", { chat_id: "chat-1", from_persona_uid: "bot-persona", text: "hi", markdown: true });
   await bridge.request("send", { chat_id: "chat-x", from_persona_uid: "bot-persona", text: "hey", markdown: false });
+  await bridge.request("send", { chat_id: "chat-1", from_persona_uid: "bot-persona", text: "a cat", markdown: true, attachments: ["/tmp/cat.jpg"] });
+  await bridge.request("send", { chat_id: "chat-y", from_persona_uid: "bot-persona", text: "", markdown: true, attachments: ["/tmp/cat.jpg"] });
   await bridge.request("call", { from_persona_uid: "bot-persona", number: "+15557654321" });
   await assert.rejects(bridge.request("nope"), /unknown command/);
   await assert.rejects(bridge.request("hangup", { call_id: "missing" }), /call not found/);
@@ -56,6 +58,9 @@ test("bridge carries chat and call events and commands both ways", async () => {
   assert.match(log, /FAKE start-stream pcm 16000 320/);
   assert.match(log, /FAKE handler-send chat-1 'hi' 3/);
   assert.match(log, /FAKE process-send 'hey' bot-persona chat-x {2}1/);
+  assert.match(log, /FAKE handler-send chat-1 'a cat' 3 attachments \['\/tmp\/cat.jpg'\]/);
+  assert.match(log, /FAKE process-send '' bot-persona chat-y {2}3 attachments \['\/tmp\/cat.jpg'\]/);
+  assert.doesNotMatch(log, /FAKE handler-send chat-1 'hi' 3 attachments/, "text-only sends carry no attachments");
   assert.match(log, /FAKE make-call bot-persona \+15557654321/);
   assert.match(log, /FAKE hangup/);
   assert.equal(bridge.running, false);

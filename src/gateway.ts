@@ -6,7 +6,7 @@ import {
   type PhoundChannelRuntime,
   type PhoundSender,
 } from "./inbound.js";
-import { looksLikePhoneNumber, normalizePhoneNumber, phoundSenderId } from "./targets.js";
+import { isPhoundPersonaUid, looksLikePhoneNumber, normalizePhoneNumber, phoundSenderId } from "./targets.js";
 import type {
   PhoundContact,
   PhoundIncomingCall,
@@ -39,13 +39,14 @@ const contexts = new Map<string, AccountContext>();
  * and keeps their chat session; a phone number is only caller ID, which can be
  * spoofed, so its calls get a session of their own and no command-owner rights.
  */
-function callSender(params: { fromNumber?: string; fromUid?: string; name?: string }): PhoundSender {
+export function callSender(params: { fromNumber?: string; fromUid?: string; name?: string }): PhoundSender {
   const id = phoundSenderId(params);
   const number = normalizePhoneNumber(params.fromNumber ?? "");
+  const isPhoneCaller = !isPhoundPersonaUid(params.fromUid) && Boolean(number);
   return {
     id,
     name: params.name || number || id,
-    ...(number ? { sessionId: `call:${number}` } : {}),
+    ...(isPhoneCaller ? { sessionId: `call:${number}` } : {}),
   };
 }
 

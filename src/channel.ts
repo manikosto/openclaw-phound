@@ -27,7 +27,7 @@ import {
 import { PhoundChannelConfigSchema } from "./config-schema.js";
 import { runPhoundAccount } from "./gateway.js";
 import type { PhoundChannelRuntime } from "./inbound.js";
-import { sendPhoundText } from "./send.js";
+import { sendPhoundMedia, sendPhoundText } from "./send.js";
 import { normalizeAllowEntry, normalizePhoundTarget, parsePhoundTarget } from "./targets.js";
 import type { ResolvedPhoundAccount } from "./types.js";
 
@@ -121,6 +121,32 @@ async function sendText(ctx: { cfg: Parameters<typeof resolvePhoundAccount>[0]; 
   return { channel: CHANNEL_ID, messageId: result.messageId, conversationId: result.chatId };
 }
 
+async function sendMedia(ctx: {
+  cfg: Parameters<typeof resolvePhoundAccount>[0];
+  accountId?: string | null;
+  to: string;
+  text: string;
+  mediaUrl?: string;
+  mediaAccess?: object;
+  mediaLocalRoots?: readonly string[];
+  mediaReadFile?: (filePath: string) => Promise<Buffer>;
+}) {
+  if (!ctx.mediaUrl) {
+    return await sendText(ctx);
+  }
+  const account = resolvePhoundAccount(ctx.cfg, ctx.accountId);
+  const result = await sendPhoundMedia({
+    account,
+    to: ctx.to,
+    text: ctx.text,
+    mediaUrl: ctx.mediaUrl,
+    mediaAccess: ctx.mediaAccess,
+    mediaLocalRoots: ctx.mediaLocalRoots,
+    mediaReadFile: ctx.mediaReadFile,
+  });
+  return { channel: CHANNEL_ID, messageId: result.messageId, conversationId: result.chatId };
+}
+
 export const phoundPlugin: ChannelPlugin<ResolvedPhoundAccount> = createChatChannelPlugin({
   base: {
     id: CHANNEL_ID,
@@ -136,7 +162,7 @@ export const phoundPlugin: ChannelPlugin<ResolvedPhoundAccount> = createChatChan
     },
     capabilities: {
       chatTypes: ["direct"],
-      media: false,
+      media: true,
       threads: false,
       reactions: false,
       edit: false,
@@ -271,5 +297,6 @@ export const phoundPlugin: ChannelPlugin<ResolvedPhoundAccount> = createChatChan
       };
     },
     sendText,
+    sendMedia,
   },
 });
