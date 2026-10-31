@@ -8,6 +8,7 @@ import WebSocket from "ws";
 import type { PhoundBridge, PhoundBridgeLog } from "../bridge.js";
 import type { PhoundChannelRuntime, PhoundSender } from "../inbound.js";
 import { ENGINE_SAMPLE_RATE, startVoiceEngine, type VoiceEngine, type VoiceEngineParams } from "./engine.js";
+import { resolveGlobalMap } from "openclaw/plugin-sdk/global-singleton";
 
 export type CallDirection = "inbound" | "outbound";
 
@@ -300,7 +301,10 @@ function streamOrigin(url: string): string {
   }
 }
 
-const calls = new Map<string, PhoundCallSession>();
+// OpenClaw can load this plugin more than once in one gateway process (the channel and the
+// agent tools get separate module copies), so live state sits on a process-wide key that
+// every copy shares; a plain module-level Map would be empty in the agent tools' copy.
+const calls = resolveGlobalMap<string, PhoundCallSession>(Symbol.for("openclaw.phound.calls"));
 
 export function registerCall(accountId: string, session: PhoundCallSession): void {
   calls.set(`${accountId}:${session.callId}`, session);
