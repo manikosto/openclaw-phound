@@ -49,3 +49,21 @@ test("contacts from the config are normalized, and unusable ones dropped", async
   } as never);
   assert.deepEqual(account.contacts, [{ name: "Mom", number: "+15550001111", note: "Lives in Boston" }]);
 });
+
+test("the agent tools' copy of the plugin sees the channel copy's connected account", async () => {
+  // OpenClaw loads the plugin into separate module copies for the channel and for the agent
+  // tools; a query string gives this test a second copy of each module the same way.
+  const channelCopy = await import("../src/bridge.js?copy=channel");
+  const toolsCopy = await import("../src/bridge.js?copy=tools");
+  assert.notEqual(channelCopy.setActiveBridge, toolsCopy.setActiveBridge, "two module copies");
+  const fakeBridge = { running: true } as unknown as Parameters<typeof channelCopy.setActiveBridge>[1];
+  channelCopy.setActiveBridge("acct-shared", fakeBridge);
+  try {
+    assert.equal(toolsCopy.getActiveBridge("acct-shared"), fakeBridge);
+    assert.ok(toolsCopy.listActiveBridges().includes(fakeBridge!));
+  } finally {
+    channelCopy.setActiveBridge("acct-shared", undefined);
+  }
+  assert.throws(() => toolsCopy.getActiveBridge("acct-shared"), /not connected/);
+});
+

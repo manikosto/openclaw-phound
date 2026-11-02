@@ -6,6 +6,7 @@ import { dirname, join } from "node:path";
 import { createInterface } from "node:readline";
 import { fileURLToPath } from "node:url";
 import type { ResolvedPhoundAccount } from "./types.js";
+import { resolveGlobalMap } from "openclaw/plugin-sdk/global-singleton";
 
 /**
  * The Node side of bridge/phound_bridge.py: one Python process per account,
@@ -224,7 +225,10 @@ export class PhoundBridge extends EventEmitter {
   }
 }
 
-const bridges = new Map<string, PhoundBridge>();
+// OpenClaw can load this plugin more than once in one gateway process (the channel and the
+// agent tools get separate module copies), so live state sits on a process-wide key that
+// every copy shares; a plain module-level Map would be empty in the agent tools' copy.
+const bridges = resolveGlobalMap<string, PhoundBridge>(Symbol.for("openclaw.phound.bridges"));
 
 export function setActiveBridge(accountId: string, bridge: PhoundBridge | undefined): void {
   if (bridge) {

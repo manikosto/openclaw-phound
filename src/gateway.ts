@@ -20,6 +20,7 @@ import {
   registerCall,
   removeCall,
 } from "./voice/call-session.js";
+import { resolveGlobalMap } from "openclaw/plugin-sdk/global-singleton";
 
 type OutboundCallRequest = { opening: string; purpose?: string; conversational: boolean; name?: string };
 
@@ -32,7 +33,10 @@ type AccountContext = {
   pendingOutbound: Map<string, OutboundCallRequest>;
 };
 
-const contexts = new Map<string, AccountContext>();
+// OpenClaw can load this plugin more than once in one gateway process (the channel and the
+// agent tools get separate module copies), so live state sits on a process-wide key that
+// every copy shares; a plain module-level Map would be empty in the agent tools' copy.
+const contexts = resolveGlobalMap<string, AccountContext>(Symbol.for("openclaw.phound.accounts"));
 
 /**
  * The other party of a call. A Phound app user is the persona Phound vouches for
