@@ -95,3 +95,14 @@ test("outbound media lands in a private temp file the SDK can type by extension"
   assert.match(await writeMediaFile({ buffer: Buffer.from("x"), fileName: "../evil/report.pdf" }), /\/report\.pdf$/);
 });
 
+test("outbound media with an overlong file name is still written, under a shortened name", async () => {
+  const { basename } = await import("node:path");
+  const { writeMediaFile } = await import("../src/send.js");
+  // A URL path segment or a Content-Disposition name can exceed the 255-byte file name limit.
+  const jpg = await writeMediaFile({ buffer: Buffer.from("x"), contentType: "image/jpeg", fileName: `${"a".repeat(300)}.jpeg` });
+  assert.equal(basename(jpg), `${"a".repeat(100)}.jpg`);
+  // An overlong extension of unknown type is dropped rather than truncated into a different one.
+  const odd = await writeMediaFile({ buffer: Buffer.from("x"), fileName: `photo.${"x".repeat(300)}` });
+  assert.equal(basename(odd), "photo");
+});
+

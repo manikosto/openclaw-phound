@@ -52,6 +52,9 @@ export async function sendPhoundText(params: {
 const MEDIA_MAX_BYTES = 25 * 1024 * 1024;
 /** uccrobot uploads the file after the send command returns, so the copy outlives it. */
 const MEDIA_FILE_TTL_MS = 10 * 60_000;
+/** Bounds on the temp file's name, well inside the 255-byte limit of common filesystems. */
+const MEDIA_STEM_MAX_CHARS = 100;
+const MEDIA_EXTENSION_MAX_CHARS = 16;
 
 const EXTENSION_BY_CONTENT_TYPE: Record<string, string> = {
   "image/jpeg": ".jpg",
@@ -72,11 +75,24 @@ const EXTENSION_BY_CONTENT_TYPE: Record<string, string> = {
 export async function writeMediaFile(media: OutboundMedia): Promise<string> {
   const original = basename(media.fileName ?? "").replace(/[^\w.-]+/g, "_").replace(/^\.+/, "");
   const contentType = (media.contentType ?? "").split(";")[0]!.trim().toLowerCase();
-  const extension = EXTENSION_BY_CONTENT_TYPE[contentType] ?? extname(original);
-  const stem = (extname(original) ? original.slice(0, -extname(original).length) : original) || "attachment";
+  const originalExtension = extname(original);
+  // The name comes from a URL path or a Content-Disposition header, so it can be any
+  // length; a file name over the filesystem's 255-byte limit fails the whole send.
+  // After the replace above it is ASCII, so characters are bytes.
+  const extension =
+    EXTENSION_BY_CONTENT_TYPE[contentType] ??
+    (originalExtension.length <= MEDIA_EXTENSION_MAX_CHARS ? originalExtension : "");
+  const stem =
+    (originalExtension ? original.slice(0, -originalExtension.length) : original).slice(0, MEDIA_STEM_MAX_CHARS) ||
+    "attachment";
   const dir = await mkdtemp(join(tmpdir(), "openclaw-phound-media-"));
   const path = join(dir, `${stem}${extension}`);
-  await writeFile(path, media.buffer, { mode: 0o600 });
+  try {
+    await writeFile(path, media.buffer, { mode: 0o600 });
+  } catch (err) {
+    await rm(dir, { recursive: true, force: true });
+    throw err;
+  }
   setTimeout(() => void rm(dir, { recursive: true, force: true }), MEDIA_FILE_TTL_MS).unref();
   return path;
 }
