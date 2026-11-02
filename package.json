@@ -1,6 +1,6 @@
 {
   "name": "openclaw-phound",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "OpenClaw channel plugin for Phound: chats, SMS and phone calls through a Phound bot persona.",
   "type": "module",
   "scripts": {
@@ -118,9 +118,9 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/manikosto/openclaw-phound"
+    "url": "https://github.com/Phoundry-LLC/openclaw-phound"
   },
-  "homepage": "https://github.com/manikosto/openclaw-phound#readme",
+  "homepage": "https://github.com/Phoundry-LLC/openclaw-phound#readme",
   "keywords": [
     "openclaw",
     "openclaw-plugin",

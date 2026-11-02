@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/manikosto/openclaw-phound/main/assets/icon.png" alt="Phound" width="120">
+  <img src="https://raw.githubusercontent.com/Phoundry-LLC/openclaw-phound/main/assets/icon.png" alt="Phound" width="120">
 </p>
 
 <h1 align="center">Phound for OpenClaw</h1>
@@ -141,7 +141,7 @@ For several characters, add one Phound token per character under `channels.phoun
 The repository has a ready setup: the official OpenClaw image plus this plugin.
 
 ```bash
-git clone https://github.com/manikosto/openclaw-phound && cd openclaw-phound
+git clone https://github.com/Phoundry-LLC/openclaw-phound && cd openclaw-phound
 printf 'OPENAI_API_KEY=...\nPHOUND_TOKEN=...\n' > .env
 docker compose up -d --build
 docker compose exec openclaw node /app/openclaw.mjs config set channels.phound.personaUid '"<PERSONAS>"'
