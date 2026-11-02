@@ -12,8 +12,8 @@ class BaseChatHandler:
         self.chat_id = chat_id
         self.persona_uid = persona_uid
 
-    def send_message_nowait(self, text, text_format=1, **_):
-        _log("handler-send", self.chat_id, repr(text), int(text_format))
+    def send_message_nowait(self, text, text_format=1, attachments=None, **_):
+        _log("handler-send", self.chat_id, repr(text), int(text_format), *(["attachments", repr(attachments)] if attachments else []))
 
     def show_typing(self, timeout=60, **_):
         _log("typing", self.chat_id)

@@ -32,8 +32,8 @@ class Phound:
     def register_call_handler(self, factory):
         self.call_factory = factory
 
-    def send_message_nowait(self, text, from_persona_uid, chat_id="", persona_uid="", text_format=1, **_):
-        log("process-send", repr(text), from_persona_uid, chat_id, persona_uid, int(text_format))
+    def send_message_nowait(self, text, from_persona_uid, chat_id="", persona_uid="", text_format=1, attachments=None, **_):
+        log("process-send", repr(text), from_persona_uid, chat_id, persona_uid, int(text_format), *(["attachments", repr(attachments)] if attachments else []))
 
     def make_call(self, from_persona_uid, phone_number):
         log("make-call", from_persona_uid, phone_number)

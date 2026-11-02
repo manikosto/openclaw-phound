@@ -86,7 +86,20 @@ export function normalizeAllowEntry(raw: string): string {
 }
 
 /** Who a chat message or call comes from, as allowFrom and session routing see them. */
+/** A Phound persona uid; PSTN callers and SMS senders carry "0" or nothing. */
+export function isPhoundPersonaUid(uid?: string): boolean {
+  const trimmed = (uid ?? "").trim();
+  return trimmed !== "" && trimmed !== "0";
+}
+
+/**
+ * A Phound app user is known by their persona uid even when the persona has a
+ * number assigned (the platform sends RemoteNumber for those too); only a sender
+ * without a persona is known by phone number.
+ */
 export function phoundSenderId(params: { fromNumber?: string; fromUid?: string }): string {
-  const number = normalizePhoneNumber(params.fromNumber ?? "");
-  return number || (params.fromUid ?? "").trim();
+  if (isPhoundPersonaUid(params.fromUid)) {
+    return params.fromUid!.trim();
+  }
+  return normalizePhoneNumber(params.fromNumber ?? "");
 }
