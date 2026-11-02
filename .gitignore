@@ -5,3 +5,9 @@ bridge/.venv/
 .env
 dist/
 .clawhub-validation/
+# >>> magnum (managed) — Magnum Studio scratch
+# Per-ticket git worktrees Magnum checks out here. They are scratch;
+# a clone that does not ignore them cannot merge.
+/.worktrees/
+/graphify-out
+# <<< magnum

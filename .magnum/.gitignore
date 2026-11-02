@@ -1,0 +1,27 @@
+# Magnum's own directory. Only TWO things in here are
+# shared: the specifications, and the project's own flows.
+#
+# v0.14.s — could .magnum simply be local and gitignored? Almost.
+# Everything Magnum produces for itself — run records, the
+# knowledge graph, analysis artifacts, the notes it leaves itself —
+# is personal, disposable and was landing in the operator's checkout
+# as day-one dirt, which is what blocked their first git pull.
+#
+# The exception is docs/. A ticket's specification is the ORDER the
+# work was built from: it rides the ticket's branch, a reviewer opens
+# one diff and sees what was promised beside what was delivered, and
+# the implementation review fetches it from that branch over the API.
+# Ignore it and every review fails with "no specification in the
+# branch".
+#
+# v0.15.d9 — and flows/: the pipelines this project built for itself.
+# A colleague who pulls must get them too, and the daemon reads them
+# from the checkout it works in.
+*
+!.gitignore
+!docs/
+!docs/**
+!flows/
+!flows/**
+!specs/
+!specs/**
